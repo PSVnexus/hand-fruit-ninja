@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Hand Slice — Webcam Fruit Ninja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="dark-mode">
+
+  <!-- Hidden video source used only as a pixel source for the canvas -->
+  <video id="webcam" playsinline autoplay muted></video>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- ============ HUD (visible while playing) ============ -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-pill hud-score-pill">
+        <span class="hud-label">Score</span>
+        <span id="hud-score">0</span>
+      </div>
+      <div class="hud-pill">
+        <span class="hud-label">Best</span>
+        <span id="hud-high-score">0</span>
+      </div>
+      <div id="hud-lives" class="hud-pill hud-lives"></div>
+      <div class="hud-spacer"></div>
+      <div id="hand-status" class="hud-pill hud-hand-status">🔍 Show your hand to the camera</div>
+      <button id="btn-mute" class="icon-btn" title="Mute / unmute">🔊</button>
+      <button id="btn-settings" class="icon-btn" title="Settings">⚙️</button>
+      <button id="btn-pause" class="icon-btn" title="Pause">⏸</button>
+    </div>
+    <div id="hud-combo" class="hud-combo"></div>
+    <div id="hud-fps" class="hud-fps">60</div>
+  </div>
+
+  <div id="combo-banner" class="combo-banner"></div>
+
+  <!-- ============ Main Menu ============ -->
+  <div id="overlay-menu" class="overlay">
+    <div class="panel menu-panel">
+      <h1 class="game-title">HAND<span>SLICE</span></h1>
+      <p class="subtitle">Slice fruit with your bare hand. No mouse. No touch. Just you and the blade.</p>
+      <div class="menu-stat">
+        <span class="hud-label">High Score</span>
+        <span id="menu-high-score" class="menu-high-score">0</span>
+      </div>
+      <button id="btn-start" class="btn btn-primary">▶ Start Game</button>
+      <button id="btn-menu-settings" class="btn btn-ghost">⚙ Settings</button>
+      <ol class="howto">
+        <li>Allow camera access when prompted.</li>
+        <li>Hold your hand up so your index fingertip is visible.</li>
+        <li>Swipe <strong>fast</strong> through fruit to slice it — slow moves won't cut.</li>
+        <li>Avoid the bombs. One hit ends the run instantly.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ============ Pause ============ -->
+  <div id="overlay-pause" class="overlay hidden">
+    <div class="panel">
+      <h2>Paused</h2>
+      <button id="btn-resume" class="btn btn-primary">▶ Resume</button>
+      <button id="btn-restart-from-pause" class="btn btn-ghost">↺ Restart</button>
+      <button id="btn-quit" class="btn btn-ghost">🏠 Quit to Menu</button>
+    </div>
+  </div>
+
+  <!-- ============ Game Over ============ -->
+  <div id="overlay-gameover" class="overlay hidden">
+    <div class="panel">
+      <h2 class="gameover-title">Game Over</h2>
+      <p id="gameover-reason" class="gameover-reason"></p>
+      <div class="final-stats">
+        <div>
+          <span class="hud-label">Score</span>
+          <span id="final-score" class="final-score">0</span>
+        </div>
+        <div>
+          <span class="hud-label">Best</span>
+          <span id="final-high-score" class="final-score">0</span>
+        </div>
+      </div>
+      <div id="new-high-badge" class="new-high-badge hidden">🏆 New High Score!</div>
+      <button id="btn-restart" class="btn btn-primary">↺ Play Again</button>
+    </div>
+  </div>
+
+  <!-- ============ Loading ============ -->
+  <div id="overlay-loading" class="overlay hidden">
+    <div class="panel loading-panel">
+      <div class="spinner"></div>
+      <p id="loading-text">Requesting camera access…</p>
+    </div>
+  </div>
+
+  <!-- ============ Settings ============ -->
+  <div id="overlay-settings" class="overlay hidden">
+    <div class="panel settings-panel">
+      <h2>Settings</h2>
+
+      <label class="setting-row">
+        <span>Hand sensitivity</span>
+        <input type="range" id="setting-sensitivity" min="0.1" max="0.95" step="0.01" />
+      </label>
+
+      <label class="setting-row">
+        <span>Swipe speed threshold</span>
+        <input type="range" id="setting-threshold" min="300" max="2200" step="10" />
+      </label>
+
+      <label class="setting-row">
+        <span>Music volume</span>
+        <input type="range" id="setting-music-vol" min="0" max="1" step="0.01" />
+      </label>
+
+      <label class="setting-row">
+        <span>Sound effects volume</span>
+        <input type="range" id="setting-sfx-vol" min="0" max="1" step="0.01" />
+      </label>
+
+      <label class="setting-row setting-row-inline">
+        <span>Hide webcam feed</span>
+        <input type="checkbox" id="setting-hide-webcam" />
+      </label>
+
+      <label class="setting-row setting-row-inline">
+        <span>Dark mode</span>
+        <input type="checkbox" id="setting-dark-mode" />
+      </label>
+
+      <label class="setting-row">
+        <span>Camera</span>
+        <select id="setting-camera"></select>
+      </label>
+
+      <button id="btn-fullscreen" class="btn btn-ghost">⛶ Toggle Fullscreen</button>
+      <button id="btn-close-settings" class="btn btn-primary">Done</button>
+    </div>
+  </div>
+
+  <!-- MediaPipe Hands (loaded from CDN — requires internet access at runtime) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <!-- Game modules (plain scripts, order matters: each defines globals the next uses) -->
+  <script src="src/storage.js"></script>
+  <script src="src/physics.js"></script>
+  <script src="src/particles.js"></script>
+  <script src="src/fruit.js"></script>
+  <script src="src/bomb.js"></script>
+  <script src="src/collision.js"></script>
+  <script src="src/handTracker.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/game.js"></script>
+</body>
+</html>
