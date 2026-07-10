@@ -5,27 +5,7 @@ plain HTML/CSS/JS, the Canvas API, and MediaPipe Hands for real-time hand
 tracking. No backend, no build step, no external audio/image assets — all
 sound is synthesized and all fruit/bomb art is drawn procedurally.
 
-## Running it
 
-Browsers block webcam access (`getUserMedia`) on plain `file://` pages, so
-you need to serve the folder over `http://localhost` (or HTTPS). Any static
-server works, for example:
-
-```bash
-cd fruit-ninja-hand
-python3 -m http.server 8000
-# then open http://localhost:8000 in Chrome, Edge, or Firefox
-```
-
-or, with Node installed:
-
-```bash
-npx serve .
-```
-
-You need an internet connection the first time you load the page — MediaPipe
-Hands is loaded from a CDN (`cdn.jsdelivr.net`) rather than bundled. Once
-loaded, everything else (physics, audio, rendering) runs fully offline/client-side.
 
 ## How to play
 
